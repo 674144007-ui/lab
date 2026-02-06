@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Chemistry Lab Survival</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Itim&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧪</text></svg>">
+
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Itim', cursive;
+            margin: 0; padding: 0; min-height: 100vh;
+            
+            /* ✅ ใช้พื้นหลังเดิม */
+            background-image: url('images_bg.png'); 
+            background-color: #f0f4f8; 
+            
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 50px;
+            overflow-x: hidden; 
+        }
+
+        /* กล่องหลัก */
+        .container {
+            width: 90%; max-width: 800px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px; border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            position: relative; z-index: 10;
+            backdrop-filter: blur(5px);
+        }
+
+        h2 { margin-top: 0; margin-bottom: 10px; color: #333; text-align: center; }
+
+        /* ✅ ปุ่มไปคลังสารเคมี (เพิ่มให้แล้วครับ) */
+        .btn-inventory {
+            display: block;
+            width: fit-content;
+            margin: 0 auto 20px auto;
+            padding: 8px 25px;
+            background: #6c5ce7; /* สีม่วงเข้าธีม */
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            font-size: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            border: 2px solid rgba(255,255,255,0.5);
+        }
+        .btn-inventory:hover {
+            transform: scale(1.05);
+            background: #5b4cc4;
+            color: white;
+        }
+
+        /* Controls */
+        .control-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        
+        select, input, button {
+            font-family: 'Itim', cursive; width: 100%; padding: 12px;
+            border: 2px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box;
+        }
+
+        button#mix-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; cursor: pointer; font-size: 18px; transition: transform 0.2s;
+            box-shadow: 0 4px 10px rgba(118, 75, 162, 0.3);
+        }
+        button#mix-button:hover { transform: scale(1.02); }
+        button#mix-button:active { transform: scale(0.98); }
+        button:disabled { opacity: 0.7; cursor: not-allowed; }
+
+        /* 3D Viewer Container */
+        #viewer3d {
+            height: 400px; width: 100%;
+            background: radial-gradient(circle, #ffffff 0%, #e6e9f0 100%);
+            border-radius: 12px; border: 2px dashed #ccc;
+            position: relative; overflow: hidden; margin-top: 20px;
+        }
+
+        /* Result Box */
+        #result-box {
+            margin-top: 20px; padding: 15px;
+            background: #f8f9fa; border-radius: 8px; border-left: 5px solid #764ba2;
+            font-size: 16px; line-height: 1.6;
+        }
+        .res-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #ddd; padding: 5px 0; }
+        .res-val { font-weight: bold; color: #667eea; }
+
+        /* UI: Status Bars */
+        .status-panel {
+            position: fixed; top: 20px; right: 20px; width: 260px;
+            background: rgba(30, 30, 30, 0.9); padding: 15px; border-radius: 12px;
+            color: white; z-index: 1000; box-shadow: 0 5px 15px rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+        }
+        .bar-row { margin-bottom: 12px; }
+        .bar-label { font-size: 14px; margin-bottom: 4px; display: flex; justify-content: space-between;}
+        .progress-track { width: 100%; height: 12px; background: #444; border-radius: 6px; overflow: hidden; border: 1px solid #555; }
+        .progress-fill { height: 100%; width: 100%; transition: width 0.5s; }
+        #beaker-bar { background: #00d2ff; box-shadow: 0 0 10px #00d2ff; }
+        #health-bar { background: #00ff44; box-shadow: 0 0 10px #00ff44; }
+
+        button.reset-btn {
+            background: #ff4757; color: white; border: none; margin-top: 5px; font-size: 14px; padding: 8px; width: 100%; cursor: pointer; border-radius: 5px;
+        }
+
+        /* CSS พิเศษสำหรับ Dropdown (ให้เด้งทับทุกอย่าง) */
+        .ts-dropdown {
+            z-index: 99999 !important; 
+        }
+
+        /* FX: Overlays */
+        #broken-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Broken_glass.png/800px-Broken_glass.png'); 
+            background-size: cover; pointer-events: none; opacity: 0; transition: opacity 0.1s; z-index: 9999; mix-blend-mode: multiply;
+        }
+        #toxic-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 20%, rgba(0, 255, 0, 0.6) 90%);
+            pointer-events: none; opacity: 0; transition: opacity 1.5s ease; z-index: 9998;
+        }
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-4px, 0, 0); }
+            20%, 80% { transform: translate3d(6px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+            40%, 60% { transform: translate3d(8px, 0, 0); }
+        }
+    </style>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://esm.sh/three@0.150.1",
+            "three/addons/OrbitControls.js": "https://esm.sh/three@0.150.1/examples/jsm/controls/OrbitControls.js"
+        }
+    }
+    </script>
+</head>
+<body>
+
+<div class="status-panel">
+    <div class="bar-row">
+        <span class="bar-label">🧊 ความทนทานบีกเกอร์ <span id="text-beaker">100%</span></span>
+        <div class="progress-track"><div id="beaker-bar" class="progress-fill" style="width: 100%;"></div></div>
+    </div>
+    <div class="bar-row">
+        <span class="bar-label">❤️ สุขภาพร่างกาย <span id="text-health">100%</span></span>
+        <div class="progress-track"><div id="health-bar" class="progress-fill" style="width: 100%;"></div></div>
+    </div>
+    <button class="reset-btn" id="btn-reset-all">🔄 รีเซ็ตแล็บ (Reset)</button>
+</div>
+
+<div id="broken-overlay"></div>
+<div id="toxic-overlay"></div>
+
+<div class="container">
+    <h2>🧪 Survival Chemistry Lab</h2>
+    
+    <a href="inventory.php" class="btn-inventory">📦 ดูคลังสารเคมี / ตรวจสอบสี</a>
+
+    <div class="control-group">
+        <div>
+            <label>สารเคมี A:</label>
+            <select id="chemicalA" placeholder="ค้นหาธาตุ/สารประกอบ..."></select>
+            <input type="number" id="volA" value="50" placeholder="ปริมาตร (ml)">
+        </div>
+        <div>
+            <label>สารเคมี B:</label>
+            <select id="chemicalB" placeholder="ค้นหาธาตุ/สารประกอบ..."></select>
+            <input type="number" id="volB" value="50" placeholder="ปริมาตร (ml)">
+        </div>
+    </div>
+
+    <button id="mix-button">⚗️ ผสมสารเคมี</button>
+
+    <div id="viewer3d"></div>
+
+    <div id="result-box">
+        <div class="res-row"><span>📦 ผลิตภัณฑ์:</span> <span id="res-product" class="res-val">-</span></div>
+        <div class="res-row"><span>📝 สูตรเคมี:</span> <span id="res-formula" class="res-val">-</span></div>
+        <div class="res-row"><span>🌡️ อุณหภูมิ:</span> <span id="res-temp" class="res-val">-</span></div>
+        
+        <div class="res-row"><span>🎨 สีสารละลาย:</span> <span id="res-color" class="res-val">-</span></div>
+        
+        <div class="res-row"><span>💧 สถานะ:</span> <span id="res-state" class="res-val">-</span></div>
+        <div class="res-row"><span>🧱 ตะกอน:</span> <span id="res-precipitate" class="res-val">-</span></div>
+        <div class="res-row"><span>☁️ แก๊ส:</span> <span id="res-gas" class="res-val">-</span></div>
+        
+        <div style="margin-top: 10px; font-size: 0.9em; text-align: right; color: #888;">
+            Volume: <span id="res-volume">0</span> mL
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+<script type="module">
+    // Import 3D Engine ของเดิม
+    import { init3DScene, updateLiquidVisuals } from './js/3d_engine.js';
+
+    // Global Variables
+    let tomA, tomB;
+    let hp = 100;
+    let beakerHp = 100;
+
+    // 1. Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        // Init 3D
+        const container = document.getElementById('viewer3d');
+        if (container) init3DScene(container);
+
+        // Load Data
+        loadChemicalsAndInitTomSelect();
+
+        // Bind Events
+        document.getElementById('mix-button').addEventListener('click', handleMix);
+        document.getElementById('btn-reset-all').addEventListener('click', () => window.location.reload());
+    });
+    
+    // ฟังก์ชันโหลดสารเคมี
+    async function loadChemicalsAndInitTomSelect() {
+        try {
+            const response = await fetch('get_chemicals.php');
+            const data = await response.json();
+            
+            if (!Array.isArray(data)) throw new Error("Invalid Data format");
+
+            const config = {
+                valueField: 'value',
+                labelField: 'text',
+                searchField: 'text',
+                options: data,
+                maxOptions: 200,
+                placeholder: 'พิมพ์เพื่อค้นหา...',
+                
+                // ✅ KEY FIX: บังคับให้ Dropdown ไปเกาะที่ Body (แก้ปัญหา Dropdown หาย)
+                dropdownParent: 'body', 
+                
+                render: {
+                    option: function(data, escape) {
+                        return '<div style="padding: 5px;">' + escape(data.text) + '</div>';
+                    },
+                    no_results: function(data, escape) {
+                        return '<div class="no-results">ไม่พบข้อมูล</div>';
+                    }
+                }
+            };
+
+            tomA = new TomSelect("#chemicalA", config);
+            tomB = new TomSelect("#chemicalB", config);
+
+            console.log(`✅ Loaded ${data.length} chemicals.`);
+
+        } catch (error) {
+            console.error("Failed to load chemicals:", error);
+            alert("⚠️ เชื่อมต่อ Database ไม่ได้ กรุณาตรวจสอบไฟล์ get_chemicals.php");
+        }
+    }
+
+    // ฟังก์ชันผสมสาร
+    async function handleMix() {
+        const chemA = tomA.getValue();
+        const chemB = tomB.getValue();
+        const volA = document.getElementById('volA').value || 0;
+        const volB = document.getElementById('volB').value || 0;
+
+        if (!chemA || !chemB) {
+            alert("⚠️ กรุณาเลือกสารเคมีให้ครบทั้ง 2 ตัวครับ");
+            return;
+        }
+
+        const btn = document.getElementById('mix-button');
+        btn.disabled = true;
+        btn.innerHTML = "⏳ กำลังทำปฏิกิริยา...";
+
+        try {
+            const url = `mix.php?a=${chemA}&b=${chemB}&volA=${volA}&volB=${volB}`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.error || "Unknown Error");
+            }
+
+            // ส่งข้อมูลไป 3D Engine
+            updateLiquidVisuals(data);
+
+            // แสดงผลลัพธ์ Text
+            setText('res-product', data.product_name);
+            setText('res-formula', data.product_formula || "-");
+            setText('res-temp', (data.temperature || 25) + " °C");
+            
+            const colorHex = data.special_color || '#FFFFFF';
+            const colorName = data.color_name_thai || "ไม่ระบุ";
+            document.getElementById('res-color').innerHTML = `
+                <span style="display:inline-block; width:15px; height:15px; background-color:${colorHex}; border: 1px solid #999; margin-right:5px; vertical-align:middle; border-radius: 50%;"></span> 
+                ${colorName}
+            `;
+
+            setText('res-state', translateState(data.final_state));
+            setText('res-precipitate', data.precipitate);
+            setText('res-gas', data.gas);
+            setText('res-volume', data.total_volume);
+
+            // Effect
+            resetEffects();
+            if (data.effect_type === 'explosion') {
+                triggerExplosion();
+                updateBars(50, 50);
+            } else if (data.effect_type === 'toxic_gas') {
+                triggerToxic();
+                updateBars(20, 0);
+            } else if (data.damage_player > 0) {
+                updateBars(data.damage_player, 0);
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert("❌ เกิดข้อผิดพลาด: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = "⚗️ ผสมสารเคมี";
+        }
+    }
+
+    // Helper Functions
+    function setText(id, text) { const el = document.getElementById(id); if (el) el.innerText = text; }
+    function translateState(state) {
+        if(state === 'liquid') return 'ของเหลว (Liquid)';
+        if(state === 'solid') return 'ของแข็ง (Solid)';
+        if(state === 'gas') return 'ก๊าซ (Gas)';
+        return state;
+    }
+    function resetEffects() {
+        document.getElementById('broken-overlay').style.opacity = 0;
+        document.getElementById('toxic-overlay').style.opacity = 0;
+        document.body.classList.remove('shake');
+    }
+    function triggerExplosion() {
+        document.getElementById('broken-overlay').style.opacity = 1;
+        document.body.classList.add('shake');
+        alert("💥 ตู้มมม!!! เกิดการระเบิด!");
+    }
+    function triggerToxic() {
+        document.getElementById('toxic-overlay').style.opacity = 1;
+        alert("☠️ แค่กๆ! ก๊าซพิษ!");
+    }
+    function updateBars(damagePlayer, damageBeaker) {
+        hp -= damagePlayer; beakerHp -= damageBeaker;
+        if(hp < 0) hp = 0; if(beakerHp < 0) beakerHp = 0;
+        document.getElementById('health-bar').style.width = hp + "%";
+        document.getElementById('text-health').innerText = hp + "%";
+        document.getElementById('beaker-bar').style.width = beakerHp + "%";
+        document.getElementById('text-beaker').innerText = beakerHp + "%";
+        if(hp < 30) document.getElementById('health-bar').style.backgroundColor = "#ff4757";
+        if(hp === 0) setTimeout(() => alert("💀 Game Over!"), 100);
+    }
+</script>
+
+</body>
+</html>
